@@ -10,9 +10,13 @@ export default {
         'poppins': ['Poppins','sans-serif'],
       },
       backgroundImage: {
-        'mobile': "url('/images/pattern-bg-mobile.png')",
-        
-        'desktop': "url('/images/pattern-bg-desktop.png')",
+        'boost-mobile': "url('/images/bg-boost-mobile.svg')",
+
+        'boost-desktop': "url('/images/bg-boost-desktop.svg')",
+
+        'shorten-mobile': "url('/images/bg-shorten-mobile.svg')",
+
+        'shorten-desktop': "url('/images/bg-shorten-desktop.svg')",
       },
       colors: {
         'cyan': "hsl(180, 66%, 49%)",
