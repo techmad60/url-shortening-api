@@ -33,6 +33,7 @@ export default {
         
         'very-dark-violet': "hsl(260, 8%, 14%)"
       },
+
     },
   },
   plugins: [],
