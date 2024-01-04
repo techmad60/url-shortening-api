@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from "./components/Navbar";
 import ShortenUrl from './components/ShortenUrl';
 import ShortenedInfo from './components/ShortenedInfo';
@@ -7,14 +7,31 @@ import axios from "axios";
 function App() {
   const [isNavbarOpen, setIsNavbarOpen] = useState(false);
   const [isShortened, setIsShortened] = useState(false);
+  const [isDivVisible, setDivVisible] = useState(true);
+  const [originalUrl, setOriginalUrl] = useState('');
+  const [shortenedUrl, setShortenedUrl] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const storedIsDivVisible = localStorage.getItem('isDivVisible');
+    const storedIsShortened = localStorage.getItem('isShortened');
+    const storedOriginalUrl = localStorage.getItem('originalUrl');
+    const storedShortenedUrl = localStorage.getItem('shortenedUrl');
+  
+    // If 'isDivVisible' is not present in local storage, default to true
+    setDivVisible(storedIsDivVisible === null ? true : storedIsDivVisible === 'false' ? false : true);
+    setIsShortened(storedIsShortened === 'true');
+
+    setOriginalUrl(storedOriginalUrl || '');
+    setShortenedUrl(storedShortenedUrl || '');
+  }, []);
+  
 
   const toggleNavbar = () => {
     setIsNavbarOpen((prevIsNavbarOpen) => !prevIsNavbarOpen);
   };
 
-  const [originalUrl, setOriginalUrl] = useState('');
-  const [shortenedUrl, setShortenedUrl] = useState('');
-  const [error, setError] = useState('');
+ 
 
   const handleInputChange = (e) => {
     setOriginalUrl(e.target.value);
@@ -35,22 +52,26 @@ function App() {
           },
         }
       );
-  
+
       console.log('API Response:', response.data);
-  
+
       const shortenedUrl = response.data.short_url;
-  
-      // Confirm that shortenedUrl is a string
+
       if (typeof shortenedUrl === 'string') {
-        setIsShortened(true);
         setShortenedUrl(shortenedUrl);
         setError('');
+        setIsShortened(true);
+        setDivVisible(true);
+        localStorage.setItem('isDivVisible', 'true');
+        localStorage.setItem('isShortened', 'true');
+        localStorage.setItem('originalUrl', originalUrl);
+        localStorage.setItem('shortenedUrl', shortenedUrl); // Add this line
       } else {
         setError('Invalid response format. Expected a string for the shortened URL.');
       }
     } catch (error) {
       console.error('Error shortening URL:', error);
-  
+
       if (error.response) {
         console.log('API Response Error:', error.response.data);
         setError(error.response.data.message);
@@ -59,7 +80,18 @@ function App() {
       }
     }
   };
-  
+
+  const handleDeleteClick = () => {
+    setDivVisible(false);
+    localStorage.setItem('isDivVisible', 'false');
+  };
+
+  useEffect(() => {
+    return () => localStorage.removeItem('isDivVisible');
+  }, []);
+
+  console.log('isShortened:', isShortened);
+  console.log('isDivVisible:', isDivVisible);
   
 
   return (
@@ -92,9 +124,10 @@ function App() {
         </section>
 
         <section className="bg-slate-200">
-        {isShortened && (
-            <div className={`pt-24 mx-5 text-start hide ${isShortened ? 'show' : 'hide'}`}>
-              <ShortenedInfo originalUrl={originalUrl} shortenedUrl={shortenedUrl} />
+          {isShortened && isDivVisible && (
+            <div className={`pt-24 mx-5 text-start ${isDivVisible && isShortened ? 'show' : 'hide'}`}>
+              
+              <ShortenedInfo originalUrl={originalUrl} shortenedUrl={shortenedUrl} handleDeleteClick={handleDeleteClick} isDivVisible = {isDivVisible}/>
             </div>
           )}
           <h2 className="text-2xl pt-36 font-extrabold ">Advanced Statistics</h2>
