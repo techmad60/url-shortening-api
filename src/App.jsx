@@ -10,21 +10,38 @@ function App() {
   const [isDivVisible, setDivVisible] = useState(true);
   const [originalUrl, setOriginalUrl] = useState('');
   const [shortenedUrl, setShortenedUrl] = useState('');
+  
   const [error, setError] = useState('');
+  const [shortenedLinks, setShortenedLinks] = useState([]);
 
   useEffect(() => {
     const storedIsDivVisible = localStorage.getItem('isDivVisible');
     const storedIsShortened = localStorage.getItem('isShortened');
     const storedOriginalUrl = localStorage.getItem('originalUrl');
     const storedShortenedUrl = localStorage.getItem('shortenedUrl');
+    const storedShortenedLinks = JSON.parse(localStorage.getItem('shortenedLinks')) || [];
   
-    // If 'isDivVisible' is not present in local storage, default to true
+    console.log('storedIsDivVisible:', storedIsDivVisible);
+    console.log('storedIsShortened:', storedIsShortened);
+    console.log('storedOriginalUrl:', storedOriginalUrl);
+    console.log('storedShortenedUrl:', storedShortenedUrl);
+    console.log('storedShortenedLinks:', storedShortenedLinks);
+  
     setDivVisible(storedIsDivVisible === null ? true : storedIsDivVisible === 'false' ? false : true);
-    setIsShortened(storedIsShortened === 'true');
-
-    setOriginalUrl(storedOriginalUrl || '');
-    setShortenedUrl(storedShortenedUrl || '');
+    setShortenedLinks(storedShortenedLinks);
   }, []);
+  
+  
+
+  const saveToLocalStorage = () => {
+    localStorage.setItem('isDivVisible', isDivVisible.toString());
+    localStorage.setItem('isShortened', isShortened.toString()); // Update this line
+    localStorage.setItem('originalUrl', originalUrl);
+    localStorage.setItem('shortenedUrl', shortenedUrl);
+    localStorage.setItem('shortenedLinks', JSON.stringify(shortenedLinks));
+  };
+  
+  
   
 
   const toggleNavbar = () => {
@@ -53,22 +70,23 @@ function App() {
         }
       );
 
+
       console.log('API Response:', response.data);
 
       const shortenedUrl = response.data.short_url;
 
       if (typeof shortenedUrl === 'string') {
+        setShortenedLinks((prevLinks) => [...prevLinks, { originalUrl, shortenedUrl }]);
         setShortenedUrl(shortenedUrl);
         setError('');
+       
+        saveToLocalStorage();
         setIsShortened(true);
         setDivVisible(true);
-        localStorage.setItem('isDivVisible', 'true');
-        localStorage.setItem('isShortened', 'true');
-        localStorage.setItem('originalUrl', originalUrl);
-        localStorage.setItem('shortenedUrl', shortenedUrl); // Add this line
       } else {
         setError('Invalid response format. Expected a string for the shortened URL.');
       }
+      saveToLocalStorage();
     } catch (error) {
       console.error('Error shortening URL:', error);
 
@@ -81,11 +99,11 @@ function App() {
     }
   };
 
-  const handleDeleteClick = () => {
-    setDivVisible(false);
-    localStorage.setItem('isDivVisible', 'false');
+  const handleDeleteClick = (index) => {
+    setShortenedLinks((prevLinks) => prevLinks.filter((link, i) => i !== index));
+    saveToLocalStorage();
   };
-
+  
   useEffect(() => {
     return () => localStorage.removeItem('isDivVisible');
   }, []);
@@ -124,12 +142,16 @@ function App() {
         </section>
 
         <section className="bg-slate-200">
-          {isShortened && isDivVisible && (
-            <div className={`pt-24 mx-5 text-start ${isDivVisible && isShortened ? 'show' : 'hide'}`}>
-              
-              <ShortenedInfo originalUrl={originalUrl} shortenedUrl={shortenedUrl} handleDeleteClick={handleDeleteClick} isDivVisible = {isDivVisible}/>
-            </div>
-          )}
+          {shortenedLinks.map((link, index) => (
+          <div key={index} className={`pt-24 mx-5 text-start ${isDivVisible ? 'show' : 'hide'}`}>
+            <ShortenedInfo
+              originalUrl={link.originalUrl}
+              shortenedUrl={link.shortenedUrl}
+              handleDeleteClick={() => handleDeleteClick(index)}
+              isDivVisible={isDivVisible}
+            />
+          </div>
+        ))}
           <h2 className="text-2xl pt-36 font-extrabold ">Advanced Statistics</h2>
           <p className="p-5">Track how your links are performing across the web with our advanced statistics dashboard.</p>
 

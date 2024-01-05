@@ -6,7 +6,7 @@ const ShortenedInfo = ({ originalUrl, shortenedUrl, handleDeleteClick, isDivVisi
   return isDivVisible ? (
     <div className={`bg-white rounded-md mt-4 pb-4 flex flex-col px-4 ${isDivVisible ? 'show' : 'hide'}`}>
       <button className='ml-auto pt-2' onClick={handleDeleteClick}>
-        <img src="./images/xmark-solid.svg" alt="delete-btn" className='w-4 py-2' />
+        <img src="./images/xmark-solid.svg" alt="delete-btn" className='w-4' />
       </button>
       <p className='py-2 flex text-ellipsis'>{originalUrl}</p>
       <hr className='border border-slate-300'/>
