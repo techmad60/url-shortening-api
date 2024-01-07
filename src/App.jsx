@@ -10,9 +10,12 @@ function App() {
   const [isDivVisible, setDivVisible] = useState(true);
   const [originalUrl, setOriginalUrl] = useState('');
   const [shortenedUrl, setShortenedUrl] = useState('');
-  
   const [error, setError] = useState('');
-  const [shortenedLinks, setShortenedLinks] = useState([]);
+  const [shortenedLinks, setShortenedLinks] = useState([
+    { originalUrl: '', shortenedUrl: '', isVisible: true },
+  ]);
+
+  // ...
 
   useEffect(() => {
     const storedIsDivVisible = localStorage.getItem('isDivVisible');
@@ -20,69 +23,64 @@ function App() {
     const storedOriginalUrl = localStorage.getItem('originalUrl');
     const storedShortenedUrl = localStorage.getItem('shortenedUrl');
     const storedShortenedLinks = JSON.parse(localStorage.getItem('shortenedLinks')) || [];
-  
-    console.log('storedIsDivVisible:', storedIsDivVisible);
-    console.log('storedIsShortened:', storedIsShortened);
-    console.log('storedOriginalUrl:', storedOriginalUrl);
-    console.log('storedShortenedUrl:', storedShortenedUrl);
-    console.log('storedShortenedLinks:', storedShortenedLinks);
-  
+
+    console.log('Stored data from local storage:', storedIsDivVisible, storedIsShortened, storedOriginalUrl, storedShortenedUrl, storedShortenedLinks);
+
     setDivVisible(storedIsDivVisible === null ? true : storedIsDivVisible === 'false' ? false : true);
+    setIsShortened(storedIsShortened === 'true');
+    setOriginalUrl(storedOriginalUrl || '');
+    setShortenedUrl(storedShortenedUrl || '');
     setShortenedLinks(storedShortenedLinks);
   }, []);
-  
-  
 
-  const saveToLocalStorage = () => {
+  const saveToLocalStorage = (links) => {
+    const updatedLinks = links || shortenedLinks;  // Use the passed links or the current state
     localStorage.setItem('isDivVisible', isDivVisible.toString());
-    localStorage.setItem('isShortened', isShortened.toString()); // Update this line
+    localStorage.setItem('isShortened', isShortened.toString());
     localStorage.setItem('originalUrl', originalUrl);
     localStorage.setItem('shortenedUrl', shortenedUrl);
-    localStorage.setItem('shortenedLinks', JSON.stringify(shortenedLinks));
-  };
-  
-  
-  
+    localStorage.setItem('shortenedLinks', JSON.stringify(updatedLinks));
 
-  const toggleNavbar = () => {
-    setIsNavbarOpen((prevIsNavbarOpen) => !prevIsNavbarOpen);
+    console.log('Saved data to local storage:', isDivVisible, isShortened, originalUrl, shortenedUrl, updatedLinks);
   };
-
- 
 
   const handleInputChange = (e) => {
     setOriginalUrl(e.target.value);
+  };
+
+  const handleDeleteClick = (index) => {
+    setShortenedLinks((prevLinks) => {
+      const updatedLinks = prevLinks.filter((link, i) => i !== index);
+      saveToLocalStorage(updatedLinks); // Make sure to call saveToLocalStorage
+      return updatedLinks;
+    });
+  };
+
+
+  const toggleNavbar = () => {
+    setIsNavbarOpen((prevIsNavbarOpen) => !prevIsNavbarOpen);
   };
 
   const handleShortenUrl = async () => {
     try {
       const response = await axios.post(
         'https://url-shortener23.p.rapidapi.com/shorten',
-        {
-          url: originalUrl,
-        },
-        {
-          headers: {
-            'content-type': 'application/json',
-            'X-RapidAPI-Key': '214317bfbemsh07407bb72ed8ccfp103ee4jsn9f28f2238dca',
-            'X-RapidAPI-Host': 'url-shortener23.p.rapidapi.com',
-          },
-        }
+        { url: originalUrl },
+        { headers: { 'content-type': 'application/json', 'X-RapidAPI-Key': '214317bfbemsh07407bb72ed8ccfp103ee4jsn9f28f2238dca', 'X-RapidAPI-Host': 'url-shortener23.p.rapidapi.com' } }
       );
-
-
-      console.log('API Response:', response.data);
 
       const shortenedUrl = response.data.short_url;
 
       if (typeof shortenedUrl === 'string') {
-        setShortenedLinks((prevLinks) => [...prevLinks, { originalUrl, shortenedUrl }]);
+        const newLink = { originalUrl, shortenedUrl, isVisible: true };
+        setShortenedLinks((prevLinks) => [...prevLinks, newLink]);
         setShortenedUrl(shortenedUrl);
         setError('');
-       
-        saveToLocalStorage();
+        saveToLocalStorage();  // Move this line inside the if block
         setIsShortened(true);
         setDivVisible(true);
+
+        console.log('Successfully shortened URL. Data after update:', shortenedUrl, shortenedLinks);
       } else {
         setError('Invalid response format. Expected a string for the shortened URL.');
       }
@@ -96,20 +94,20 @@ function App() {
       } else {
         setError('An error occurred while processing your request.');
       }
+      saveToLocalStorage();
     }
   };
 
-  const handleDeleteClick = (index) => {
-    setShortenedLinks((prevLinks) => prevLinks.filter((link, i) => i !== index));
-    saveToLocalStorage();
-  };
-  
+  // ...
+
   useEffect(() => {
-    return () => localStorage.removeItem('isDivVisible');
+    return () => {
+      localStorage.removeItem('isDivVisible');
+      console.log('Cleaned up. Removed isDivVisible from local storage.');
+    };
   }, []);
 
-  console.log('isShortened:', isShortened);
-  console.log('isDivVisible:', isDivVisible);
+
   
 
   return (
@@ -142,13 +140,13 @@ function App() {
         </section>
 
         <section className="bg-slate-200">
-          {shortenedLinks.map((link, index) => (
-          <div key={index} className={`pt-24 mx-5 text-start ${isDivVisible ? 'show' : 'hide'}`}>
+        {shortenedLinks.map((link, index) => (
+          <div key={index} className={`pt-24 mx-5 text-start ${link.isVisible ? 'show' : 'hide'}`}>
             <ShortenedInfo
               originalUrl={link.originalUrl}
               shortenedUrl={link.shortenedUrl}
               handleDeleteClick={() => handleDeleteClick(index)}
-              isDivVisible={isDivVisible}
+              isDivVisible={link.isVisible}
             />
           </div>
         ))}
